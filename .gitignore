@@ -1,0 +1,11 @@
+reddit_communities.db
+csv/
+scripts/csv_to_sqlite.py
+scripts/deduped.py
+scripts/merge-csv.py
+scripts/migrate_script.py
+scripts/migrate_to_sqlite.py
+scripts/over18.py
+scripts/over18merge.py
+scripts/server - backup.py
+migrate_to_sqlite.py

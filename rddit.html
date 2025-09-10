@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reddit Community Explorer</title>
+    <style>
+        /* Reset and Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        body.nsfw-only-mode {
+           background: linear-gradient(0deg, #590303 0%, #2a0404 100%);
+            }
+
+            body.nsfw-only-mode .results {
+                background: rgba(255, 235, 238, 0.95); /* Same pink as NSFW cards */
+            }
+
+        body.nsfw-only-mode .results-header {
+            background: #e57373; /* Lighter red to complement the pink */
+        }
+
+
+        /* Layout */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        /* Controls Panel */
+        .controls {
+            background: rgba(255,255,255,0.95);
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .tier-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .tier-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            background: #f8f9fa;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .tier-btn.active {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .control-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .control-group input,
+        .control-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .control-group input:focus,
+        .control-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        /* Stats */
+        .stats {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,0.9);
+            padding: 15px 25px;
+            border-radius: 10px;
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        /* Results Section */
+        .results {
+            background: rgba(255,255,255,0.95);
+            border-radius: 15px 15px 0 0;
+            overflow: visible;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .results-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+            background: #667eea;
+            color: white;
+            border-radius: 15px 15px 0 0;
+        }
+
+        .results-header h2 {
+            margin: 0;
+        }
+
+        .view-toggle {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .view-toggle:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        /* Community Grid */
+        .community-grid {
+            display: grid;
+            gap: 1px;
+            background: #e1e5e9;
+        }
+
+        .community-card {
+            background: white;
+            padding: 20px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border-left: 4px solid transparent;
+            position: relative;
+        }
+
+        .community-card:hover {
+            background: #f8f9fa;
+            border-left-color: #667eea;
+            transform: translateX(5px);
+        }
+
+        .community-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .community-link {
+            color: inherit;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .community-link:hover {
+            text-decoration: underline;
+        }
+
+        .subscriber-count {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .expand-arrow {
+            margin-left: auto;
+            font-size: 0.9rem;
+            color: #888;
+            cursor: pointer;
+            position: relative;
+            transition: transform 0.3s ease;
+        }
+
+        .community-card.expanded .expand-arrow {
+            transform: rotate(180deg);
+        }
+
+        .community-meta {
+            display: flex;
+            gap: 15px;
+            font-size: 0.9rem;
+            color: #888;
+            margin-bottom: 8px;
+        }
+
+        .community-description {
+            color: #666;
+            line-height: 1.4;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+            transform: skew(-10deg, 0);
+            font-size: 0.9rem;
+        }
+
+        .community-card.expanded .community-description {
+            max-height: 500px;
+            padding: 8px 0;
+        }
+
+        /* NSFW Styles */
+        .community-card.nsfw {
+            background: #ffebee;
+            border-left-color: #e57373;
+        }
+
+        .community-card.nsfw::before {
+            content: "NSFW";
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: #f44336;
+            color: white;
+            padding: 4px 8px;
+            font-size: 0.6rem;
+            font-weight: bold;
+            border-radius: 0 0 0 6px;
+        }
+
+        .community-card.nsfw .community-name,
+        .community-card.nsfw .community-meta,
+        .community-card.nsfw .community-description {
+            filter: blur(3px);
+            transition: filter 0.3s ease;
+        }
+
+        .community-card.nsfw.unblurred .community-name,
+        .community-card.nsfw.unblurred .community-meta,
+        .community-card.nsfw.unblurred .community-description {
+            filter: none;
+        }
+
+        .community-card.nsfw .community-link {
+            color: #d32f2f;
+        }
+
+        .community-card.nsfw .subscriber-count {
+            background: #ffcdd2;
+            color: #c62828;
+        }
+
+        .community-card.nsfw.only-nsfw-mode::before {
+    display: none !important;
+}
+
+.community-card.nsfw.only-nsfw-mode .community-name,
+.community-card.nsfw.only-nsfw-mode .community-meta,
+.community-card.nsfw.only-nsfw-mode .community-description {
+    filter: none !important;
+}
+
+
+        /* Compact View */
+        .community-grid.compact .community-card {
+            display: flex;
+            flex-direction: column;
+            padding: 8px 16px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .community-grid.compact .community-meta {
+            display: none;
+        }
+
+        .community-grid.compact .community-description {
+            font-size: 0.85rem;
+        }
+
+        /* Tooltips */
+        .tooltip {
+            position: relative;
+        }
+
+        .tooltip .tooltip-text {
+            visibility: hidden;
+            opacity: 0;
+            background: rgba(255,255,255,0.95);
+            color: #333;
+            text-align: center;
+            border-radius: 6px;
+            padding: 6px 10px;
+            position: absolute;
+            z-index: 1000;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+            font-size: 0.8rem;
+            transition: opacity 0.3s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            backdrop-filter: blur(10px);
+                font-weight: 400
+        }
+
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* Highlighting */
+        .highlight {
+            background-color: #fff176;
+            color: #000;
+            font-weight: bold;
+            border-radius: 3px;
+            padding: 0 2px;
+        }
+
+        /* Menu Overlay */
+        .menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(6px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        .menu-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            width: 300px;
+            max-width: 90%;
+            text-align: left;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .menu-content h3 {
+            margin-bottom: 20px;
+            color: #667eea;
+        }
+
+        .menu-content label {
+            display: block;
+            margin: 15px 0;
+            cursor: pointer;
+        }
+
+        .menu-content input[type="checkbox"] {
+            margin-right: 8px;
+        }
+
+        .menu-btn {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 9999;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.9);
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #667eea;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .menu-btn:hover {
+            background: rgba(255,255,255,1);
+            transform: scale(1.05);
+        }
+
+        .close-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 15px;
+        }
+
+        .close-btn:hover {
+            background: #556cd6;
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0 0px 0; /* Added bottom margin to push it up from bottom */
+            gap: 10px;
+        }
+
+        .page-btn {
+            padding: 8px 16px;
+                        position: relative;
+            border: 1px solid #ddd;
+            background: white;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .page-btn:hover {
+            background: #f8f9fa;
+        }
+
+        .page-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        /* Loading and Error States */
+        .loading,
+        .error,
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 1.2rem;
+        }
+
+        .error {
+            color: #e74c3c;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .control-row {
+                flex-direction: column;
+            }
+            
+            .tier-selector {
+                justify-content: center;
+            }
+            
+            .stats {
+                justify-content: center;
+            }
+
+            .results-header {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Reddit Community Explorer</h1>
+            <p>Discover and explore Reddit's most popular communities</p>
+        </div>
+
+        <div class="controls">
+            <div class="tier-selector">
+                <button class="tier-btn active" onclick="setTier('all')">All Communities</button>
+                <button class="tier-btn" onclick="setTier('major')">Major (1M+)</button>
+                <button class="tier-btn" onclick="setTier('rising')">Rising (100k-999k)</button>
+                <button class="tier-btn" onclick="setTier('growing')">Growing (10k-99k)</button>
+                <button class="tier-btn" onclick="setTier('emerging')">Emerging (1k-9.9k)</button>
+            </div>
+
+            <div class="control-row">
+                <div class="control-group">
+                    <label for="search">Search Communities</label>
+                    <input type="text" id="search" placeholder="Search..." oninput="debouncedSearch()">
+                </div>
+
+                <div class="control-group">
+                    <label for="searchMode">Search In</label>
+                    <select id="searchMode" onchange="loadData()">
+                        <option value="name">Name Only</option>
+                        <option value="all">Name & Description</option>
+                        <option value="description">Description Only</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label for="sort">Sort By</label>
+                    <select id="sort" onchange="loadData()">
+                        <option value="subscribers">Subscribers (High to Low)</option>
+                        <option value="subscribers_asc">Subscribers (Low to High)</option>
+                        <option value="name">Name (A-Z)</option>
+                        <option value="name_desc">Name (Z-A)</option>
+                        <option value="created">Newest First</option>
+                        <option value="created_desc">Oldest First</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalShown">0</div>
+                    <div class="stat-label">Communities Shown</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="totalSubscribers">0</div>
+                    <div class="stat-label">Total Subscribers</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="avgSubscribers">0</div>
+                    <div class="stat-label">Avg Subscribers</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="results">
+            <div class="results-header">
+                <h2>Communities</h2>
+                <span id="resultCount">Loading...</span>
+                <button id="compactToggle" class="view-toggle">Compact View</button>
+            </div>
+            <div class="community-grid" id="communityGrid">
+                <div class="loading">📊 Loading data from server...</div>
+            </div>
+            <div class="pagination" id="pagination"></div>
+        </div>
+    </div>
+
+    <!-- Menu Overlay -->
+    <div class="menu-overlay" id="menuOverlay">
+        <div class="menu-content">
+            <h3>Preferences</h3>
+            <label>
+                <input type="checkbox" id="nsfwToggle" checked>
+                Show NSFW content
+            </label>
+            <label>
+                <input type="checkbox" id="onlyNSFWToggle">
+                Show ONLY NSFW content
+            </label>
+            <button class="close-btn" id="closeMenuBtn">Close</button>
+        </div>
+    </div>
+
+    <button class="menu-btn" id="openMenuBtn">☰ Menu</button>
+
+    <script>
+        // Configuration
+        const API_BASE = 'http://localhost:5000/api';
+        let currentTier = 'all';
+        let currentPage = 1;
+        let searchTimeout;
+
+        // DOM Elements
+        const menuOverlay = document.getElementById('menuOverlay');
+        const openMenuBtn = document.getElementById('openMenuBtn');
+        const closeMenuBtn = document.getElementById('closeMenuBtn');
+        const nsfwToggle = document.getElementById('nsfwToggle');
+        const onlyNSFWToggle = document.getElementById('onlyNSFWToggle');
+        
+
+        // Utility Functions
+        function formatNumber(num) {
+            if (!num) return '0';
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num.toString();
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'Unknown date';
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'short', 
+                    day: 'numeric' 
+                });
+            } catch (e) {
+                return dateString;
+            }
+        }
+
+function getTimeAgo(dateString) {
+    if (!dateString) return 'Unknown time';
+    try {
+        const date = new Date(dateString);
+        const now = new Date();
+        
+        const yearsDiff = now.getFullYear() - date.getFullYear();
+        
+        // More than 1 year old
+        if (yearsDiff > 1) {
+            return `${yearsDiff} years ago`;
+        }
+        
+        // Exactly 1 year difference - check if it's actually been a full year
+        if (yearsDiff === 1) {
+            if (now.getMonth() > date.getMonth() || 
+                (now.getMonth() === date.getMonth() && now.getDate() >= date.getDate())) {
+                return '1 year ago';
+            }
+        }
+        
+        // Within the current year - calculate months and remaining days
+        const monthsDiff = (now.getFullYear() - date.getFullYear()) * 12 + (now.getMonth() - date.getMonth());
+        
+        if (monthsDiff > 0) {
+            // Calculate remaining days after accounting for full months
+            const tempDate = new Date(date);
+            tempDate.setMonth(tempDate.getMonth() + monthsDiff);
+            const remainingDays = Math.floor((now - tempDate) / (1000 * 60 * 60 * 24));
+            
+            if (remainingDays > 0) {
+                return `${monthsDiff} month${monthsDiff === 1 ? '' : 's'}, ${remainingDays} day${remainingDays === 1 ? '' : 's'} ago`;
+            } else {
+                return `${monthsDiff} month${monthsDiff === 1 ? '' : 's'} ago`;
+            }
+        }
+        
+        // Same month - use days only
+        const daysDiff = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+        
+        if (daysDiff === 0) return 'Today';
+        return `${daysDiff} day${daysDiff === 1 ? '' : 's'} ago`;
+        
+    } catch (e) {
+        return 'Unknown time';
+    }
+}
+
+        // Search Functions
+        function debouncedSearch() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                currentPage = 1;
+                loadData();
+                updateStats();
+            }, 300);
+        }
+
+        function setTier(tier) {
+            currentTier = tier;
+            document.querySelectorAll('.tier-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            currentPage = 1;
+            loadData();
+            updateStats();
+        }
+
+        // Data Loading Functions
+        async function loadData() {
+                showLoading();
+                try {
+                    const search = document.getElementById('search').value;
+                    const sort = document.getElementById('sort').value;
+                    const searchMode = document.getElementById('searchMode').value;
+                    const onlyNSFW = onlyNSFWToggle.checked;
+                    
+                    const url = new URL(`${API_BASE}/communities`);
+                    url.searchParams.set('tier', currentTier);
+                    url.searchParams.set('search', search);
+                    url.searchParams.set('mode', searchMode);
+                    url.searchParams.set('sort', sort);
+                    url.searchParams.set('page', currentPage);
+                    url.searchParams.set('per_page', 50);
+                    
+                    if (onlyNSFW) {
+                        url.searchParams.set('nsfw_only', 'true');
+                    }
+
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error(`Server error: ${response.status}`);
+                    
+                    const data = await response.json();
+                    if (data.error) throw new Error(data.error);
+
+                    displayCommunities(data.data);
+                    updatePagination(data.pagination);
+                    updateResultCount(data.pagination);
+                    applyNSFWSettings();
+                } catch (err) {
+                    showError(err.message || 'Failed to load data');
+                }
+            }
+
+
+        async function updateStats() {
+            try {
+                const url = new URL(`${API_BASE}/stats`);
+                url.searchParams.set('tier', currentTier);
+                
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`Stats error: ${response.status}`);
+                
+                const stats = await response.json();
+                if (stats.error) return;
+                
+                document.getElementById('totalShown').textContent = stats.total.toLocaleString();
+                document.getElementById('totalSubscribers').textContent = formatNumber(stats.total_subscribers);
+                document.getElementById('avgSubscribers').textContent = formatNumber(stats.avg_subscribers);
+            } catch (err) {
+                console.error('Stats error:', err);
+            }
+        }
+
+        // Display Functions
+        function displayCommunities(communities) {
+            const grid = document.getElementById('communityGrid');
+            
+            if (!communities || communities.length === 0) {
+                grid.innerHTML = `<div class="no-results"><h3>No communities found</h3></div>`;
+                document.getElementById('resultCount').textContent = '0 communities';
+                return;
+            }
+
+            const search = document.getElementById('search').value.trim().toLowerCase();
+            const searchMode = document.getElementById('searchMode').value;
+
+            grid.innerHTML = communities.map((community, index) => {
+                let displayName = community.display_name || 'Unknown';
+                let publicDescription = community.public_description || 'No description available';
+                let expanded = false;
+
+                // Apply search highlighting
+                if (search) {
+                    const regex = new RegExp(`(${search})`, 'ig');
+                    
+                    if (searchMode === 'name' || searchMode === 'all') {
+                        if (displayName.toLowerCase().includes(search)) {
+                            displayName = displayName.replace(regex, '<span class="highlight">$1</span>');
+                        }
+                    }
+                    
+                    if (searchMode === 'description' || searchMode === 'all') {
+                        if (publicDescription.toLowerCase().includes(search)) {
+                            publicDescription = publicDescription.replace(regex, '<span class="highlight">$1</span>');
+                            expanded = true;
+                        }
+                    }
+                }
+
+                const isNSFW = community.over18 === 1 || community.over18 === true;
+                const nsfwClass = isNSFW ? ' nsfw' : '';
+
+                return `
+                    <div class="community-card${expanded ? ' expanded' : ''}${nsfwClass}" 
+                         id="card-${index}" 
+                         onclick="toggleDescription(${index}, event)">
+                        <div class="community-name">
+                            <a href="https://reddit.com${community.url || ''}" 
+                               target="_blank" 
+                               class="community-link">${displayName}</a>
+                            <div class="tooltip">
+                                <span class="subscriber-count">${formatNumber(community.subscribers || 0)}</span>
+                                <span class="tooltip-text">Subscribers</span>
+                            </div>
+                            <span class="expand-arrow">▼</span>
+                        </div>
+                        <div class="community-meta">
+                            <div class="tooltip">
+                                <span>📅</span>
+                                <span class="tooltip-text">Date Created</span>
+                            </div>
+                            ${formatDate(community.created_date)} (${getTimeAgo(community.created_date)})
+                        </div>
+                        <div class="community-description">${publicDescription}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleDescription(index, event) {
+            // Prevent toggling if clicking the link
+            if (event.target.closest('.community-link')) return;
+
+            const card = document.getElementById(`card-${index}`);
+            const isNSFW = card.classList.contains('nsfw');
+            const onlyNSFW = onlyNSFWToggle.checked;
+
+            if (isNSFW && !onlyNSFW) {
+                handleNSFWClick(card);
+            } else {
+                toggleExpanded(card);
+            }
+        }
+
+        function handleNSFWClick(card) {
+            const unblurred = card.classList.contains('unblurred');
+            const expanded = card.classList.contains('expanded');
+
+            if (!unblurred) {
+                card.classList.add('unblurred');
+            } else if (!expanded) {
+                card.classList.add('expanded');
+            } else {
+                card.classList.remove('unblurred', 'expanded');
+            }
+        }
+
+        function toggleExpanded(card) {
+            card.classList.toggle('expanded');
+        }
+
+        // Pagination Functions
+        function updatePagination(pagination) {
+            const container = document.getElementById('pagination');
+            container.innerHTML = '';
+            
+            if (!pagination || pagination.total_pages <= 1) return;
+
+            const { page, total_pages } = pagination;
+            
+            if (page > 1) {
+                container.appendChild(createPageBtn('←', page - 1));
+            }
+            
+            const startPage = Math.max(1, page - 2);
+            const endPage = Math.min(total_pages, startPage + 4);
+            
+            for (let i = startPage; i <= endPage; i++) {
+                container.appendChild(createPageBtn(i, i));
+            }
+            
+            if (page < total_pages) {
+                container.appendChild(createPageBtn('→', page + 1));
+            }
+        }
+
+        function createPageBtn(text, pageNum) {
+            const btn = document.createElement('button');
+            btn.className = `page-btn ${pageNum === currentPage ? 'active' : ''}`;
+            btn.textContent = text;
+            btn.onclick = () => changePage(pageNum);
+            return btn;
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            loadData();
+            window.scrollTo(0, 0);
+        }
+
+        function updateResultCount(pagination) {
+            if (!pagination) return;
+            
+            const { total, page, per_page } = pagination;
+            const start = (page - 1) * per_page + 1;
+            const end = Math.min(page * per_page, total);
+            
+            document.getElementById('resultCount').textContent = 
+                `Showing ${start}-${end} of ${total.toLocaleString()} subreddits`;
+        }
+
+        // NSFW Functions
+        function applyNSFWSettings() {
+            const showNSFW = nsfwToggle.checked;
+            const onlyNSFW = onlyNSFWToggle.checked;
+
+            document.querySelectorAll('.community-card').forEach(card => {
+                const isNSFW = card.classList.contains('nsfw');
+
+                // Remove any previous NSFW mode classes
+                card.classList.remove('only-nsfw-mode');
+
+                if (onlyNSFW) {
+                    if (isNSFW) {
+                        card.style.display = '';
+                        card.classList.add('only-nsfw-mode'); // Remove NSFW styling
+                                card.classList.remove('hide-nsfw');
+                        card.classList.remove('unblurred', 'expanded'); // Reset state
+                                card.dataset.nsfwClicks = 0;
+
+                    } else {
+                        card.style.display = 'none';
+                    }
+
+                } else {
+                    // Normal mode
+                        card.classList.remove('only-nsfw-mode');
+                    if (isNSFW && !showNSFW) {
+                        card.style.display = 'none';
+                    } else {
+                        card.style.display = '';
+                        if (isNSFW) {
+                            card.classList.remove('unblurred', 'expanded'); // Reset NSFW cards
+                        }
+                    }
+                }
+            });
+        }
+
+        // UI State Functions
+        function showLoading() {
+            document.getElementById('communityGrid').innerHTML = 
+                '<div class="loading">⏳ Loading communities...</div>';
+        }
+
+        function showError(message) {
+            document.getElementById('communityGrid').innerHTML = 
+                `<div class="error">⚠ ${message}</div>`;
+            document.getElementById('resultCount').textContent = 'Error loading data';
+        }
+
+        // Event Listeners
+        function setupEventListeners() {
+            // Menu
+            openMenuBtn.addEventListener('click', () => {
+                menuOverlay.style.display = 'flex';
+            });
+
+            closeMenuBtn.addEventListener('click', () => {
+                menuOverlay.style.display = 'none';
+            });
+
+            // NSFW settings
+            nsfwToggle.addEventListener('change', applyNSFWSettings);
+            onlyNSFWToggle.addEventListener('change', () => {
+                if (onlyNSFWToggle.checked) {
+                    document.body.classList.add('nsfw-only-mode');
+                } else {
+                    document.body.classList.remove('nsfw-only-mode');
+                }
+                applyNSFWSettings();
+            });
+
+
+            // View toggle
+            const toggleBtn = document.getElementById('compactToggle');
+            const grid = document.getElementById('communityGrid');
+
+            toggleBtn.addEventListener('click', () => {
+                grid.classList.toggle('compact');
+                toggleBtn.textContent = grid.classList.contains('compact') ? 
+                    'Expanded View' : 'Compact View';
+            });
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            setupEventListeners();
+            loadData();
+            updateStats();
+        });
+    </script>
+</body>
+</html>
