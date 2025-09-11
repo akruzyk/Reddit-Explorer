@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
-Migrate subreddit CSVs (with extended fields) into SQLite.
+Migrate subreddit CSVs (with extended fields + comment_count) into SQLite.
 - Lists folders in current directory so you can pick one
 - Handles boolean and numeric normalization
 - Cleans text values
 - Imports all CSVs in the chosen folder
+- Handles comment_count column if present in CSV files
 """
 
 import sqlite3
@@ -21,7 +22,7 @@ BATCH_SIZE = 1000
 
 
 def create_database_schema(db_path):
-    """Create the SQLite database and table schema"""
+    """Create the SQLite database and table schema with comment_count column"""
     print("🗄️ Creating database schema...")
 
     conn = sqlite3.connect(db_path)
@@ -62,7 +63,8 @@ def create_database_schema(db_path):
             submit_text_label TEXT,
             subreddit_type TEXT,
             suggested_comment_sort TEXT,
-            wiki_enabled INTEGER
+            wiki_enabled INTEGER,
+            comment_count_july25 INTEGER DEFAULT 0  -- Comment count column
         )
     """)
 
@@ -70,6 +72,8 @@ def create_database_schema(db_path):
     cursor.execute("CREATE INDEX idx_subscribers ON communities(subscribers)")
     cursor.execute("CREATE INDEX idx_display_name ON communities(display_name)")
     cursor.execute("CREATE INDEX idx_created_date ON communities(created_date)")
+    cursor.execute("CREATE INDEX idx_comment_count_july25 ON communities(comment_count_july25)")
+    cursor.execute("CREATE INDEX idx_over18 ON communities(over18)")
 
     # FTS for fast searching
     cursor.execute("""
@@ -146,7 +150,8 @@ def insert_batch(cursor, batch_data, fieldnames):
         'submit_text_label': 'submit_text_label',
         'subreddit_type': 'subreddit_type',
         'suggested_comment_sort': 'suggested_comment_sort',
-        'wiki_enabled': 'wiki_enabled'
+        'wiki_enabled': 'wiki_enabled',
+        'comment_count_july25': 'comment_count_july25'  # Added comment_count mapping
     }
 
     available_columns = set(fieldnames)
@@ -191,6 +196,11 @@ def load_csv_to_sqlite(filename, db_path):
 
             fieldnames = [h.strip().replace('"', '') for h in reader.fieldnames]
             reader.fieldnames = fieldnames
+            
+            # Check if comment_count_july25 column exists
+            has_comment_count = 'comment_count_july25' in fieldnames
+            if has_comment_count:
+                print(f"   ✅ Found comment_count_july25 column in {filename.name}")
 
             for row in reader:
                 line_count += 1
@@ -229,6 +239,13 @@ def load_csv_to_sqlite(filename, db_path):
                         clean_row[nf] = int(clean_row.get(nf) or 0)
                     except:
                         clean_row[nf] = 0
+                
+                # Handle comment_count field if present
+                if has_comment_count:
+                    try:
+                        clean_row['comment_count_july25'] = int(clean_row.get('comment_count_july25') or 0)
+                    except:
+                        clean_row['comment_count_july25'] = 0
 
                 if clean_row.get('created_date'):
                     clean_row['created_date'] = clean_row['created_date'].split(' ')[0]
@@ -257,7 +274,7 @@ def load_csv_to_sqlite(filename, db_path):
 
     end_time = time.time()
     print(f"   ✅ Loaded {line_count:,} rows from {filename.name} in {end_time - start_time:.2f}s")
-    return line_count
+    return line_count, has_comment_count
 
 
 def choose_input_folder() -> Path:
@@ -304,17 +321,47 @@ def migrate_all_data(input_dir: Path):
         return
 
     total_records = 0
+    files_with_comment_count = 0
     start_time = time.time()
 
     for csv_file in csv_files:
-        records = load_csv_to_sqlite(csv_file, DB_PATH)
+        records, has_comment_count = load_csv_to_sqlite(csv_file, DB_PATH)
         total_records += records
+        if has_comment_count:
+            files_with_comment_count += 1
 
     end_time = time.time()
     print("\n📊 Migration Summary:")
     print(f"   Total records: {total_records:,}")
+    print(f"   Files with comment_count_july25: {files_with_comment_count}/{len(csv_files)}")
     print(f"   Total time: {end_time - start_time:.2f}s")
     print(f"   Database size: {DB_PATH.stat().st_size / (1024*1024):.1f} MB")
+    
+    # Show some stats about comment counts
+    if files_with_comment_count > 0:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        
+        # Get comment count statistics
+        cursor.execute("SELECT COUNT(*) FROM communities WHERE comment_count_july25 > 0")
+        subreddits_with_comments = cursor.fetchone()[0]
+        
+        cursor.execute("SELECT SUM(comment_count_july25) FROM communities")
+        total_comments = cursor.fetchone()[0] or 0
+        
+        cursor.execute("SELECT AVG(comment_count_july25) FROM communities WHERE comment_count_july25 > 0")
+        avg_comments = cursor.fetchone()[0] or 0
+        
+        cursor.execute("SELECT MAX(comment_count_july25) FROM communities")
+        max_comments = cursor.fetchone()[0] or 0
+        
+        print(f"\n📈 Comment Count Statistics:")
+        print(f"   Subreddits with comments: {subreddits_with_comments:,}")
+        print(f"   Total comments: {total_comments:,}")
+        print(f"   Average comments per subreddit: {avg_comments:,.1f}")
+        print(f"   Maximum comments: {max_comments:,}")
+        
+        conn.close()
 
 
 if __name__ == "__main__":

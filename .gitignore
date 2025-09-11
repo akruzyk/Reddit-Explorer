@@ -9,3 +9,19 @@ scripts/over18.py
 scripts/over18merge.py
 scripts/server - backup.py
 migrate_to_sqlite.py
+csv-backup/1mil_over18_false_with_comments.csv
+csv-backup/1mil_over18_false.csv
+csv-backup/1mil_over18_true_with_comments.csv
+csv-backup/1mil_over18_true.csv
+csv-backup/10k-99k_over18_false_with_comments.csv
+csv-backup/10k-99k_over18_false.csv
+csv-backup/10k-99k_over18_true_with_comments.csv
+csv-backup/10k-99k_over18_true.csv
+csv-backup/100k_999k_over18_false_with_comments.csv
+csv-backup/100k_999k_over18_false.csv
+csv-backup/100k_999k_over18_true_with_comments.csv
+csv-backup/100k_999k_over18_true.csv
+csv-backup/1000-9999_over18_false_with_comments.csv
+csv-backup/1000-9999_over18_false.csv
+csv-backup/1000-9999_over18_true_with_comments.csv
+csv-backup/1000-9999_over18_true.csv

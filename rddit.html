@@ -3,1023 +3,591 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reddit Community Explorer</title>
+    <title>Reddit Community Explorer - React</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Reset and Base Styles */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            color: #333;
-        }
-        body.nsfw-only-mode {
-           background: linear-gradient(0deg, #590303 0%, #2a0404 100%);
-            }
-
-            body.nsfw-only-mode .results {
-                background: rgba(255, 235, 238, 0.95); /* Same pink as NSFW cards */
-            }
-
-        body.nsfw-only-mode .results-header {
-            background: #e57373; /* Lighter red to complement the pink */
-        }
-
-
-        /* Layout */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        /* Header */
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-            color: white;
-        }
-
-        .header h1 {
-            font-size: 3rem;
-            margin-bottom: 10px;
+        .text-shadow-lg {
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
-
-        .header p {
-            font-size: 1.2rem;
-            opacity: 0.9;
-        }
-
-        /* Controls Panel */
-        .controls {
-            background: rgba(255,255,255,0.95);
-            padding: 30px;
-            border-radius: 15px;
-            margin-bottom: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            backdrop-filter: blur(10px);
-        }
-
-        .tier-selector {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .tier-btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 25px;
-            background: #f8f9fa;
-            color: #666;
-            cursor: pointer;
+        
+        .category-card {
             transition: all 0.3s ease;
-            font-weight: 600;
         }
-
-        .tier-btn.active {
-            background: #667eea;
-            color: white;
+        
+        .category-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
         }
-
-        .control-row {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        .control-group {
-            flex: 1;
-            min-width: 200px;
-        }
-
-        .control-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-            color: #555;
-        }
-
-        .control-group input,
-        .control-group select {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e1e5e9;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: all 0.3s ease;
-        }
-
-        .control-group input:focus,
-        .control-group select:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        /* Stats */
-        .stats {
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            margin: 20px 0;
-            flex-wrap: wrap;
-        }
-
-        .stat-card {
-            background: rgba(255,255,255,0.9);
-            padding: 15px 25px;
-            border-radius: 10px;
-            text-align: center;
-            min-width: 120px;
-        }
-
-        .stat-number {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #667eea;
-        }
-
-        .stat-label {
-            font-size: 0.9rem;
-            color: #666;
-            margin-top: 5px;
-        }
-
-        /* Results Section */
-        .results {
-            background: rgba(255,255,255,0.95);
-            border-radius: 15px 15px 0 0;
-            overflow: visible;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-
-        .results-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 20px;
-            background: #667eea;
-            color: white;
-            border-radius: 15px 15px 0 0;
-        }
-
-        .results-header h2 {
-            margin: 0;
-        }
-
-        .view-toggle {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 8px;
-            background: rgba(255,255,255,0.2);
-            color: white;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .view-toggle:hover {
-            background: rgba(255,255,255,0.3);
-        }
-
-        /* Community Grid */
-        .community-grid {
-            display: grid;
-            gap: 1px;
-            background: #e1e5e9;
-        }
-
+        
         .community-card {
-            background: white;
-            padding: 20px;
             transition: all 0.3s ease;
-            cursor: pointer;
-            border-left: 4px solid transparent;
-            position: relative;
         }
-
+        
         .community-card:hover {
-            background: #f8f9fa;
-            border-left-color: #667eea;
-            transform: translateX(5px);
+            transform: translateX(8px);
         }
-
-        .community-name {
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: #667eea;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
-
-        .community-link {
-            color: inherit;
-            text-decoration: none;
-            font-weight: bold;
-        }
-
-        .community-link:hover {
-            text-decoration: underline;
-        }
-
-        .subscriber-count {
-            background: #e3f2fd;
-            color: #1976d2;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.9rem;
-        }
-
-        .expand-arrow {
-            margin-left: auto;
-            font-size: 0.9rem;
-            color: #888;
-            cursor: pointer;
-            position: relative;
-            transition: transform 0.3s ease;
-        }
-
-        .community-card.expanded .expand-arrow {
-            transform: rotate(180deg);
-        }
-
-        .community-meta {
-            display: flex;
-            gap: 15px;
-            font-size: 0.9rem;
-            color: #888;
-            margin-bottom: 8px;
-        }
-
-        .community-description {
-            color: #666;
-            line-height: 1.4;
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease, padding 0.3s ease;
-            transform: skew(-10deg, 0);
-            font-size: 0.9rem;
-        }
-
-        .community-card.expanded .community-description {
-            max-height: 500px;
-            padding: 8px 0;
-        }
-
-        /* NSFW Styles */
-        .community-card.nsfw {
-            background: #ffebee;
-            border-left-color: #e57373;
-        }
-
-        .community-card.nsfw::before {
-            content: "NSFW";
-            position: absolute;
-            top: 0;
-            right: 0;
-            background: #f44336;
-            color: white;
-            padding: 4px 8px;
-            font-size: 0.6rem;
-            font-weight: bold;
-            border-radius: 0 0 0 6px;
-        }
-
-        .community-card.nsfw .community-name,
-        .community-card.nsfw .community-meta,
-        .community-card.nsfw .community-description {
-            filter: blur(3px);
-            transition: filter 0.3s ease;
-        }
-
-        .community-card.nsfw.unblurred .community-name,
-        .community-card.nsfw.unblurred .community-meta,
-        .community-card.nsfw.unblurred .community-description {
-            filter: none;
-        }
-
-        .community-card.nsfw .community-link {
-            color: #d32f2f;
-        }
-
-        .community-card.nsfw .subscriber-count {
-            background: #ffcdd2;
-            color: #c62828;
-        }
-
-        .community-card.nsfw.only-nsfw-mode::before {
-    display: none !important;
-}
-
-.community-card.nsfw.only-nsfw-mode .community-name,
-.community-card.nsfw.only-nsfw-mode .community-meta,
-.community-card.nsfw.only-nsfw-mode .community-description {
-    filter: none !important;
-}
-
-
-        /* Compact View */
-        .community-grid.compact .community-card {
-            display: flex;
-            flex-direction: column;
-            padding: 8px 16px;
-            border-bottom: 1px solid #eee;
-        }
-
-        .community-grid.compact .community-meta {
-            display: none;
-        }
-
-        .community-grid.compact .community-description {
-            font-size: 0.85rem;
-        }
-
-        /* Tooltips */
-        .tooltip {
-            position: relative;
-        }
-
-        .tooltip .tooltip-text {
-            visibility: hidden;
-            opacity: 0;
-            background: rgba(255,255,255,0.95);
-            color: #333;
-            text-align: center;
-            border-radius: 6px;
-            padding: 6px 10px;
-            position: absolute;
-            z-index: 1000;
-            bottom: 125%;
-            left: 50%;
-            transform: translateX(-50%);
-            white-space: nowrap;
-            font-size: 0.8rem;
-            transition: opacity 0.3s;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            backdrop-filter: blur(10px);
-                font-weight: 400
-        }
-
-        .tooltip:hover .tooltip-text {
-            visibility: visible;
-            opacity: 1;
-        }
-
-        /* Highlighting */
-        .highlight {
-            background-color: #fff176;
-            color: #000;
-            font-weight: bold;
-            border-radius: 3px;
-            padding: 0 2px;
-        }
-
-        /* Menu Overlay */
-        .menu-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(6px);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 10000;
-        }
-
-        .menu-content {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            width: 300px;
-            max-width: 90%;
-            text-align: left;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
-
-        .menu-content h3 {
-            margin-bottom: 20px;
-            color: #667eea;
-        }
-
-        .menu-content label {
-            display: block;
-            margin: 15px 0;
-            cursor: pointer;
-        }
-
-        .menu-content input[type="checkbox"] {
-            margin-right: 8px;
-        }
-
-        .menu-btn {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            z-index: 9999;
-            padding: 8px 16px;
-            background: rgba(255,255,255,0.9);
-            border: none;
-            border-radius: 20px;
-            cursor: pointer;
-            font-weight: 600;
-            color: #667eea;
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-        }
-
-        .menu-btn:hover {
-            background: rgba(255,255,255,1);
-            transform: scale(1.05);
-        }
-
-        .close-btn {
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            margin-top: 15px;
-        }
-
-        .close-btn:hover {
-            background: #556cd6;
-        }
-
-        /* Pagination */
-        .pagination {
-            display: flex;
-            justify-content: center;
-            margin: 20px 0 0px 0; /* Added bottom margin to push it up from bottom */
-            gap: 10px;
-        }
-
-        .page-btn {
-            padding: 8px 16px;
-                        position: relative;
-            border: 1px solid #ddd;
-            background: white;
-            cursor: pointer;
-            border-radius: 5px;
-            transition: all 0.3s ease;
-        }
-
-        .page-btn:hover {
-            background: #f8f9fa;
-        }
-
-        .page-btn.active {
-            background: #667eea;
-            color: white;
-            border-color: #667eea;
-        }
-
-        /* Loading and Error States */
-        .loading,
-        .error,
-        .no-results {
-            text-align: center;
-            padding: 40px;
-            color: #666;
-            font-size: 1.2rem;
-        }
-
-        .error {
-            color: #e74c3c;
-        }
-
-        /* Mobile Responsive */
-        @media (max-width: 768px) {
-            .header h1 {
-                font-size: 2rem;
-            }
-            
-            .control-row {
-                flex-direction: column;
-            }
-            
-            .tier-selector {
-                justify-content: center;
-            }
-            
-            .stats {
-                justify-content: center;
-            }
-
-            .results-header {
-                flex-direction: column;
-                gap: 10px;
-            }
+        
+        .animate-spin {
+            animation: spin 1s linear infinite;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🚀 Reddit Community Explorer</h1>
-            <p>Discover and explore Reddit's most popular communities</p>
-        </div>
+    <div id="root"></div>
 
-        <div class="controls">
-            <div class="tier-selector">
-                <button class="tier-btn active" onclick="setTier('all')">All Communities</button>
-                <button class="tier-btn" onclick="setTier('major')">Major (1M+)</button>
-                <button class="tier-btn" onclick="setTier('rising')">Rising (100k-999k)</button>
-                <button class="tier-btn" onclick="setTier('growing')">Growing (10k-99k)</button>
-                <button class="tier-btn" onclick="setTier('emerging')">Emerging (1k-9.9k)</button>
-            </div>
+    <script type="text/babel">
+        const { useState, useEffect, useCallback } = React;
 
-            <div class="control-row">
-                <div class="control-group">
-                    <label for="search">Search Communities</label>
-                    <input type="text" id="search" placeholder="Search..." oninput="debouncedSearch()">
-                </div>
+        const RedditExplorer = () => {
+            // State management
+            const [communities, setCommunities] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+            const [currentTier, setCurrentTier] = useState('all');
+            const [currentCategory, setCurrentCategory] = useState('all');
+            const [currentPage, setCurrentPage] = useState(1);
+            const [searchTerm, setSearchTerm] = useState('');
+            const [searchMode, setSearchMode] = useState('all');
+            const [sortBy, setSortBy] = useState('subscribers');
+            const [nsfwOnly, setNsfwOnly] = useState(false);
+            const [isCompact, setIsCompact] = useState(false);
+            const [categoryView, setCategoryView] = useState('cards');
+            const [pagination, setPagination] = useState({});
+            const [stats, setStats] = useState({
+                total: 0,
+                total_subscribers: 0,
+                avg_subscribers: 0
+            });
+            const [expandedCards, setExpandedCards] = useState(new Set());
 
-                <div class="control-group">
-                    <label for="searchMode">Search In</label>
-                    <select id="searchMode" onchange="loadData()">
-                        <option value="name">Name Only</option>
-                        <option value="all">Name & Description</option>
-                        <option value="description">Description Only</option>
-                    </select>
-                </div>
+            const API_BASE = 'http://localhost:5000/api';
 
-                <div class="control-group">
-                    <label for="sort">Sort By</label>
-                    <select id="sort" onchange="loadData()">
-                        <option value="subscribers">Subscribers (High to Low)</option>
-                        <option value="subscribers_asc">Subscribers (Low to High)</option>
-                        <option value="name">Name (A-Z)</option>
-                        <option value="name_desc">Name (Z-A)</option>
-                        <option value="created">Newest First</option>
-                        <option value="created_desc">Oldest First</option>
-                    </select>
-                </div>
-            </div>
+            // Categories data
+            const categories = [
+                { id: 'all', name: 'All Communities', icon: '🌐', description: 'Browse all available communities', count: 0 },
+                { id: 'discussion', name: 'Discussion & Conversation', icon: '💬', description: 'Communities focused on discussion and conversation', count: 0 },
+                { id: 'humor', name: 'Humor & Memes', icon: '😂', description: 'Funny content, memes, and comedy', count: 0 },
+                { id: 'gaming', name: 'Gaming', icon: '🎮', description: 'Video games, gaming news, and gaming communities', count: 0 },
+                { id: 'technology', name: 'Technology', icon: '💻', description: 'Tech news, programming, and technology discussions', count: 0 },
+                { id: 'images', name: 'Images & Photography', icon: '📸', description: 'Photo sharing, art, and visual content', count: 0 },
+                { id: 'news', name: 'News & World Events', icon: '📰', description: 'Current events, news, and world happenings', count: 0 },
+                { id: 'creative', name: 'Creative & Arts', icon: '🎨', description: 'Art, music, writing, and creative works', count: 0 },
+                { id: 'support', name: 'Support Communities', icon: '🤝', description: 'Support groups and helpful communities', count: 0 },
+                { id: 'nsfw', name: 'NSFW Content', icon: '🔞', description: 'Adult content and NSFW communities', count: 0 }
+            ];
 
-            <div class="stats">
-                <div class="stat-card">
-                    <div class="stat-number" id="totalShown">0</div>
-                    <div class="stat-label">Communities Shown</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="totalSubscribers">0</div>
-                    <div class="stat-label">Total Subscribers</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="avgSubscribers">0</div>
-                    <div class="stat-label">Avg Subscribers</div>
-                </div>
-            </div>
-        </div>
+            // Utility functions
+            const formatNumber = (num) => {
+                if (!num) return '0';
+                if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+                if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+                return num.toString();
+            };
 
-        <div class="results">
-            <div class="results-header">
-                <h2>Communities</h2>
-                <span id="resultCount">Loading...</span>
-                <button id="compactToggle" class="view-toggle">Compact View</button>
-            </div>
-            <div class="community-grid" id="communityGrid">
-                <div class="loading">📊 Loading data from server...</div>
-            </div>
-            <div class="pagination" id="pagination"></div>
-        </div>
-    </div>
-
-    <!-- Menu Overlay -->
-    <div class="menu-overlay" id="menuOverlay">
-        <div class="menu-content">
-            <h3>Preferences</h3>
-            <label>
-                <input type="checkbox" id="nsfwToggle" checked>
-                Show NSFW content
-            </label>
-            <label>
-                <input type="checkbox" id="onlyNSFWToggle">
-                Show ONLY NSFW content
-            </label>
-            <button class="close-btn" id="closeMenuBtn">Close</button>
-        </div>
-    </div>
-
-    <button class="menu-btn" id="openMenuBtn">☰ Menu</button>
-
-    <script>
-        // Configuration
-        const API_BASE = 'http://localhost:5000/api';
-        let currentTier = 'all';
-        let currentPage = 1;
-        let searchTimeout;
-
-        // DOM Elements
-        const menuOverlay = document.getElementById('menuOverlay');
-        const openMenuBtn = document.getElementById('openMenuBtn');
-        const closeMenuBtn = document.getElementById('closeMenuBtn');
-        const nsfwToggle = document.getElementById('nsfwToggle');
-        const onlyNSFWToggle = document.getElementById('onlyNSFWToggle');
-        
-
-        // Utility Functions
-        function formatNumber(num) {
-            if (!num) return '0';
-            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-            return num.toString();
-        }
-
-        function formatDate(dateString) {
-            if (!dateString) return 'Unknown date';
-            try {
-                const date = new Date(dateString);
-                return date.toLocaleDateString('en-US', { 
-                    year: 'numeric', 
-                    month: 'short', 
-                    day: 'numeric' 
-                });
-            } catch (e) {
-                return dateString;
-            }
-        }
-
-function getTimeAgo(dateString) {
-    if (!dateString) return 'Unknown time';
-    try {
-        const date = new Date(dateString);
-        const now = new Date();
-        
-        const yearsDiff = now.getFullYear() - date.getFullYear();
-        
-        // More than 1 year old
-        if (yearsDiff > 1) {
-            return `${yearsDiff} years ago`;
-        }
-        
-        // Exactly 1 year difference - check if it's actually been a full year
-        if (yearsDiff === 1) {
-            if (now.getMonth() > date.getMonth() || 
-                (now.getMonth() === date.getMonth() && now.getDate() >= date.getDate())) {
-                return '1 year ago';
-            }
-        }
-        
-        // Within the current year - calculate months and remaining days
-        const monthsDiff = (now.getFullYear() - date.getFullYear()) * 12 + (now.getMonth() - date.getMonth());
-        
-        if (monthsDiff > 0) {
-            // Calculate remaining days after accounting for full months
-            const tempDate = new Date(date);
-            tempDate.setMonth(tempDate.getMonth() + monthsDiff);
-            const remainingDays = Math.floor((now - tempDate) / (1000 * 60 * 60 * 24));
-            
-            if (remainingDays > 0) {
-                return `${monthsDiff} month${monthsDiff === 1 ? '' : 's'}, ${remainingDays} day${remainingDays === 1 ? '' : 's'} ago`;
-            } else {
-                return `${monthsDiff} month${monthsDiff === 1 ? '' : 's'} ago`;
-            }
-        }
-        
-        // Same month - use days only
-        const daysDiff = Math.floor((now - date) / (1000 * 60 * 60 * 24));
-        
-        if (daysDiff === 0) return 'Today';
-        return `${daysDiff} day${daysDiff === 1 ? '' : 's'} ago`;
-        
-    } catch (e) {
-        return 'Unknown time';
-    }
-}
-
-        // Search Functions
-        function debouncedSearch() {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                currentPage = 1;
-                loadData();
-                updateStats();
-            }, 300);
-        }
-
-        function setTier(tier) {
-            currentTier = tier;
-            document.querySelectorAll('.tier-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
-            currentPage = 1;
-            loadData();
-            updateStats();
-        }
-
-        // Data Loading Functions
-        async function loadData() {
-                showLoading();
+            const formatDate = (dateString) => {
+                if (!dateString) return 'Unknown date';
                 try {
-                    const search = document.getElementById('search').value;
-                    const sort = document.getElementById('sort').value;
-                    const searchMode = document.getElementById('searchMode').value;
-                    const onlyNSFW = onlyNSFWToggle.checked;
-                    
+                    const date = new Date(dateString);
+                    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+                } catch (e) {
+                    return dateString;
+                }
+            };
+
+            const getYearsAgo = (dateString) => {
+                if (!dateString) return 0;
+                try {
+                    const date = new Date(dateString);
+                    const now = new Date();
+                    const diffTime = Math.abs(now - date);
+                    return Math.floor(diffTime / (1000 * 60 * 60 * 24 * 365.25));
+                } catch (e) {
+                    return 0;
+                }
+            };
+
+            const getSubredditTags = (community) => {
+                const tags = [];
+                const name = (community.display_name || '').toLowerCase();
+                const description = (community.public_description || community.description || '').toLowerCase();
+                
+                if (community.over18 || name.includes('nsfw') || description.includes('nsfw')) {
+                    tags.push({ name: 'nsfw', color: 'bg-red-500' });
+                }
+                if (name.includes('gaming') || name.includes('game') || description.includes('game')) {
+                    tags.push({ name: 'gaming', color: 'bg-green-500' });
+                }
+                if (name.includes('tech') || name.includes('programming') || name.includes('code') || description.includes('technology')) {
+                    tags.push({ name: 'tech', color: 'bg-blue-500' });
+                }
+                if (name.includes('ask') || name.includes('discussion') || description.includes('discuss')) {
+                    tags.push({ name: 'discussion', color: 'bg-purple-500' });
+                }
+                
+                return tags;
+            };
+
+            // API functions
+            const loadData = useCallback(async () => {
+                try {
+                    setLoading(true);
+                    setError(null);
+
                     const url = new URL(`${API_BASE}/communities`);
                     url.searchParams.set('tier', currentTier);
-                    url.searchParams.set('search', search);
+                    url.searchParams.set('search', searchTerm);
                     url.searchParams.set('mode', searchMode);
-                    url.searchParams.set('sort', sort);
+                    url.searchParams.set('sort', sortBy);
                     url.searchParams.set('page', currentPage);
                     url.searchParams.set('per_page', 50);
                     
-                    if (onlyNSFW) {
+                    if (nsfwOnly) {
                         url.searchParams.set('nsfw_only', 'true');
                     }
 
                     const response = await fetch(url);
-                    if (!response.ok) throw new Error(`Server error: ${response.status}`);
-                    
+                    if (!response.ok) {
+                        throw new Error(`Server error: ${response.status}`);
+                    }
+
                     const data = await response.json();
-                    if (data.error) throw new Error(data.error);
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
 
-                    displayCommunities(data.data);
-                    updatePagination(data.pagination);
-                    updateResultCount(data.pagination);
-                    applyNSFWSettings();
+                    setCommunities(data.data || []);
+                    setPagination(data.pagination || {});
+
                 } catch (err) {
-                    showError(err.message || 'Failed to load data');
+                    console.error('Error loading data:', err);
+                    setError(err.message || 'Failed to load data. Make sure the server is running.');
+                    setCommunities([]);
+                } finally {
+                    setLoading(false);
                 }
-            }
+            }, [currentTier, searchTerm, searchMode, sortBy, currentPage, nsfwOnly]);
 
-
-        async function updateStats() {
-            try {
-                const url = new URL(`${API_BASE}/stats`);
-                url.searchParams.set('tier', currentTier);
-                
-                const response = await fetch(url);
-                if (!response.ok) throw new Error(`Stats error: ${response.status}`);
-                
-                const stats = await response.json();
-                if (stats.error) return;
-                
-                document.getElementById('totalShown').textContent = stats.total.toLocaleString();
-                document.getElementById('totalSubscribers').textContent = formatNumber(stats.total_subscribers);
-                document.getElementById('avgSubscribers').textContent = formatNumber(stats.avg_subscribers);
-            } catch (err) {
-                console.error('Stats error:', err);
-            }
-        }
-
-        // Display Functions
-        function displayCommunities(communities) {
-            const grid = document.getElementById('communityGrid');
-            
-            if (!communities || communities.length === 0) {
-                grid.innerHTML = `<div class="no-results"><h3>No communities found</h3></div>`;
-                document.getElementById('resultCount').textContent = '0 communities';
-                return;
-            }
-
-            const search = document.getElementById('search').value.trim().toLowerCase();
-            const searchMode = document.getElementById('searchMode').value;
-
-            grid.innerHTML = communities.map((community, index) => {
-                let displayName = community.display_name || 'Unknown';
-                let publicDescription = community.public_description || 'No description available';
-                let expanded = false;
-
-                // Apply search highlighting
-                if (search) {
-                    const regex = new RegExp(`(${search})`, 'ig');
+            const loadStats = useCallback(async () => {
+                try {
+                    const url = new URL(`${API_BASE}/stats`);
+                    url.searchParams.set('tier', currentTier);
                     
-                    if (searchMode === 'name' || searchMode === 'all') {
-                        if (displayName.toLowerCase().includes(search)) {
-                            displayName = displayName.replace(regex, '<span class="highlight">$1</span>');
-                        }
+                    if (nsfwOnly) {
+                        url.searchParams.set('nsfw_only', 'true');
                     }
                     
-                    if (searchMode === 'description' || searchMode === 'all') {
-                        if (publicDescription.toLowerCase().includes(search)) {
-                            publicDescription = publicDescription.replace(regex, '<span class="highlight">$1</span>');
-                            expanded = true;
-                        }
+                    const response = await fetch(url);
+                    if (!response.ok) {
+                        throw new Error(`Stats error: ${response.status}`);
                     }
+                    
+                    const statsData = await response.json();
+                    
+                    if (!statsData.error) {
+                        setStats(statsData);
+                    }
+                } catch (err) {
+                    console.error('Error loading stats:', err);
                 }
+            }, [currentTier, nsfwOnly]);
 
-                const isNSFW = community.over18 === 1 || community.over18 === true;
-                const nsfwClass = isNSFW ? ' nsfw' : '';
+            // Event handlers
+            const handleTierChange = (tier) => {
+                setCurrentTier(tier);
+                setCurrentPage(1);
+            };
 
-                return `
-                    <div class="community-card${expanded ? ' expanded' : ''}${nsfwClass}" 
-                         id="card-${index}" 
-                         onclick="toggleDescription(${index}, event)">
-                        <div class="community-name">
-                            <a href="https://reddit.com${community.url || ''}" 
-                               target="_blank" 
-                               class="community-link">${displayName}</a>
-                            <div class="tooltip">
-                                <span class="subscriber-count">${formatNumber(community.subscribers || 0)}</span>
-                                <span class="tooltip-text">Subscribers</span>
-                            </div>
-                            <span class="expand-arrow">▼</span>
-                        </div>
-                        <div class="community-meta">
-                            <div class="tooltip">
-                                <span>📅</span>
-                                <span class="tooltip-text">Date Created</span>
-                            </div>
-                            ${formatDate(community.created_date)} (${getTimeAgo(community.created_date)})
-                        </div>
-                        <div class="community-description">${publicDescription}</div>
+            const handleCategoryChange = (categoryId) => {
+                setCurrentCategory(categoryId);
+                setCurrentPage(1);
+            };
+
+            const handleNsfwToggle = () => {
+                setNsfwOnly(!nsfwOnly);
+                setCurrentPage(1);
+            };
+
+            const handleSearchChange = (value) => {
+                setSearchTerm(value);
+                setCurrentPage(1);
+            };
+
+            const handlePageChange = (page) => {
+                setCurrentPage(page);
+                window.scrollTo(0, 0);
+            };
+
+            const toggleCardExpansion = (index) => {
+                const newExpanded = new Set(expandedCards);
+                if (newExpanded.has(index)) {
+                    newExpanded.delete(index);
+                } else {
+                    newExpanded.add(index);
+                }
+                setExpandedCards(newExpanded);
+            };
+
+            // Effects
+            useEffect(() => {
+                loadData();
+            }, [loadData]);
+
+            useEffect(() => {
+                loadStats();
+            }, [loadStats]);
+
+            // Debounced search effect
+            useEffect(() => {
+                const timeoutId = setTimeout(() => {
+                    if (searchTerm !== '') {
+                        loadData();
+                    }
+                }, 300);
+                return () => clearTimeout(timeoutId);
+            }, [searchTerm, loadData]);
+
+            // Components
+            const CategoryCard = ({ category, isActive, onClick }) => (
+                <div
+                    className={`category-card p-5 rounded-xl cursor-pointer transition-all duration-300 ${
+                        isActive 
+                            ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white border-2 border-indigo-500' 
+                            : 'bg-gradient-to-br from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 border-2 border-transparent hover:border-indigo-500'
+                    } hover:transform hover:-translate-y-1 hover:shadow-lg`}
+                    onClick={onClick}
+                >
+                    <span className="text-2xl mb-3 block">{category.icon}</span>
+                    <div className="text-lg font-semibold mb-1">{category.name}</div>
+                    <div className={`text-sm mb-2 ${isActive ? 'opacity-90' : 'opacity-70'}`}>
+                        {category.count.toLocaleString()} communities
                     </div>
-                `;
-            }).join('');
-        }
+                    <div className={`text-xs leading-tight ${isActive ? 'opacity-80' : 'opacity-60'}`}>
+                        {category.description}
+                    </div>
+                </div>
+            );
 
-        function toggleDescription(index, event) {
-            // Prevent toggling if clicking the link
-            if (event.target.closest('.community-link')) return;
+            const CommunityCard = ({ community, index, isExpanded, onToggle, isCompact }) => {
+                const tags = getSubredditTags(community);
+                
+                return (
+                    <div
+                        className={`community-card bg-white p-5 transition-all duration-300 cursor-pointer border-l-4 border-transparent hover:border-indigo-500 hover:bg-gray-50 hover:transform hover:translate-x-2 ${
+                            isCompact ? 'p-3' : 'p-5'
+                        }`}
+                        onClick={(e) => {
+                            if (!e.target.closest('.community-link')) {
+                                onToggle(index);
+                            }
+                        }}
+                    >
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3 flex-1">
+                                <a
+                                    href={`https://reddit.com${community.url || ''}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="community-link text-indigo-600 hover:text-indigo-800 font-bold text-lg hover:underline"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    {community.display_name || 'Unknown'}
+                                </a>
+                                <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">
+                                    {formatNumber(community.subscribers || 0)}
+                                </span>
+                            </div>
+                            <span className={`text-gray-400 transition-transform duration-200 ${
+                                isExpanded ? 'transform rotate-180' : ''
+                            }`}>
+                                ▼
+                            </span>
+                        </div>
 
-            const card = document.getElementById(`card-${index}`);
-            const isNSFW = card.classList.contains('nsfw');
-            const onlyNSFW = onlyNSFWToggle.checked;
+                        {tags.length > 0 && (
+                            <div className="flex gap-2 mt-2 flex-wrap">
+                                {tags.map((tag, idx) => (
+                                    <span key={idx} className={`${tag.color} text-white px-2 py-1 rounded text-xs font-medium`}>
+                                        {tag.name.toUpperCase()}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
 
-            if (isNSFW && !onlyNSFW) {
-                handleNSFWClick(card);
-            } else {
-                toggleExpanded(card);
-            }
-        }
+                        {!isCompact && (
+                            <div className="flex items-center gap-4 mt-3 text-sm text-gray-600">
+                                <div className="flex items-center gap-1">
+                                    📅 {formatDate(community.created_date)} ({getYearsAgo(community.created_date)} years ago)
+                                </div>
+                            </div>
+                        )}
 
-        function handleNSFWClick(card) {
-            const unblurred = card.classList.contains('unblurred');
-            const expanded = card.classList.contains('expanded');
+                        {isExpanded && (
+                            <div className="mt-4 text-gray-700 leading-relaxed border-t pt-3">
+                                {community.public_description || community.description || 'No description available'}
+                            </div>
+                        )}
+                    </div>
+                );
+            };
 
-            if (!unblurred) {
-                card.classList.add('unblurred');
-            } else if (!expanded) {
-                card.classList.add('expanded');
-            } else {
-                card.classList.remove('unblurred', 'expanded');
-            }
-        }
+            const Pagination = ({ pagination }) => {
+                if (!pagination || pagination.total_pages <= 1) return null;
 
-        function toggleExpanded(card) {
-            card.classList.toggle('expanded');
-        }
+                const { page, total_pages } = pagination;
+                const startPage = Math.max(1, page - 2);
+                const endPage = Math.min(total_pages, startPage + 4);
 
-        // Pagination Functions
-        function updatePagination(pagination) {
-            const container = document.getElementById('pagination');
-            container.innerHTML = '';
-            
-            if (!pagination || pagination.total_pages <= 1) return;
+                return (
+                    <div className="flex justify-center gap-2 my-5">
+                        {page > 1 && (
+                            <button
+                                onClick={() => handlePageChange(page - 1)}
+                                className="px-4 py-2 border border-gray-300 rounded-md bg-white hover:bg-gray-50"
+                            >
+                                ←
+                            </button>
+                        )}
+                        
+                        {Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i).map(pageNum => (
+                            <button
+                                key={pageNum}
+                                onClick={() => handlePageChange(pageNum)}
+                                className={`px-4 py-2 border rounded-md ${
+                                    pageNum === page
+                                        ? 'bg-indigo-600 text-white border-indigo-600'
+                                        : 'bg-white border-gray-300 hover:bg-gray-50'
+                                }`}
+                            >
+                                {pageNum}
+                            </button>
+                        ))}
+                        
+                        {page < total_pages && (
+                            <button
+                                onClick={() => handlePageChange(page + 1)}
+                                className="px-4 py-2 border border-gray-300 rounded-md bg-white hover:bg-gray-50"
+                            >
+                                →
+                            </button>
+                        )}
+                    </div>
+                );
+            };
 
-            const { page, total_pages } = pagination;
-            
-            if (page > 1) {
-                container.appendChild(createPageBtn('←', page - 1));
-            }
-            
-            const startPage = Math.max(1, page - 2);
-            const endPage = Math.min(total_pages, startPage + 4);
-            
-            for (let i = startPage; i <= endPage; i++) {
-                container.appendChild(createPageBtn(i, i));
-            }
-            
-            if (page < total_pages) {
-                container.appendChild(createPageBtn('→', page + 1));
-            }
-        }
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-indigo-500 to-purple-600">
+                    <div className="max-w-7xl mx-auto px-5 py-8">
+                        {/* Header */}
+                        <div className="text-center mb-10 text-white">
+                            <h1 className="text-5xl font-bold mb-3 text-shadow-lg">🚀 Reddit Community Explorer</h1>
+                            <p className="text-xl opacity-90">Discover and explore Reddit's most popular communities</p>
+                        </div>
 
-        function createPageBtn(text, pageNum) {
-            const btn = document.createElement('button');
-            btn.className = `page-btn ${pageNum === currentPage ? 'active' : ''}`;
-            btn.textContent = text;
-            btn.onclick = () => changePage(pageNum);
-            return btn;
-        }
+                        {/* Controls */}
+                        <div className="bg-white bg-opacity-95 rounded-2xl p-8 mb-8 backdrop-blur-sm shadow-xl">
+                            {/* NSFW Toggle */}
+                            <div className="flex items-center gap-3 p-4 bg-red-50 border-2 border-red-200 rounded-lg mb-6">
+                                <input
+                                    type="checkbox"
+                                    id="nsfwOnly"
+                                    checked={nsfwOnly}
+                                    onChange={handleNsfwToggle}
+                                    className="w-5 h-5 text-red-600"
+                                />
+                                <label htmlFor="nsfwOnly" className="font-semibold text-red-700 cursor-pointer">
+                                    Show ONLY NSFW Content
+                                </label>
+                            </div>
 
-        function changePage(page) {
-            currentPage = page;
-            loadData();
-            window.scrollTo(0, 0);
-        }
+                            {/* Category Cards */}
+                            <div className="mb-8">
+                                <div className="flex justify-between items-center mb-5">
+                                    <h3 className="text-xl font-semibold text-gray-700">Browse by Category</h3>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => setCategoryView('cards')}
+                                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                                                categoryView === 'cards'
+                                                    ? 'bg-indigo-600 text-white'
+                                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                            }`}
+                                        >
+                                            📱 Cards
+                                        </button>
+                                        <button
+                                            onClick={() => setCategoryView('list')}
+                                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                                                categoryView === 'list'
+                                                    ? 'bg-indigo-600 text-white'
+                                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                            }`}
+                                        >
+                                            📋 List
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div className={`grid gap-4 ${
+                                    categoryView === 'cards' 
+                                        ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5' 
+                                        : 'grid-cols-1'
+                                }`}>
+                                    {categories.map(category => (
+                                        <CategoryCard
+                                            key={category.id}
+                                            category={category}
+                                            isActive={currentCategory === category.id}
+                                            onClick={() => handleCategoryChange(category.id)}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
 
-        function updateResultCount(pagination) {
-            if (!pagination) return;
-            
-            const { total, page, per_page } = pagination;
-            const start = (page - 1) * per_page + 1;
-            const end = Math.min(page * per_page, total);
-            
-            document.getElementById('resultCount').textContent = 
-                `Showing ${start}-${end} of ${total.toLocaleString()} subreddits`;
-        }
+                            {/* Tier Selector */}
+                            <div className="flex gap-3 mb-6 flex-wrap justify-center">
+                                {[
+                                    { id: 'all', name: 'All Communities' },
+                                    { id: 'major', name: 'Major (1M+)' },
+                                    { id: 'rising', name: 'Rising (100k-999k)' },
+                                    { id: 'growing', name: 'Growing (10k-99k)' },
+                                    { id: 'emerging', name: 'Emerging (1k-9.9k)' }
+                                ].map(tier => (
+                                    <button
+                                        key={tier.id}
+                                        onClick={() => handleTierChange(tier.id)}
+                                        className={`px-6 py-3 rounded-full font-semibold transition-all transform ${
+                                            currentTier === tier.id
+                                                ? 'bg-indigo-600 text-white shadow-lg scale-105'
+                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                        }`}
+                                    >
+                                        {tier.name}
+                                    </button>
+                                ))}
+                            </div>
 
-        // NSFW Functions
-        function applyNSFWSettings() {
-            const showNSFW = nsfwToggle.checked;
-            const onlyNSFW = onlyNSFWToggle.checked;
+                            {/* Search and Controls */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                                <div className="relative">
+                                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">🔍</span>
+                                    <input
+                                        type="text"
+                                        placeholder="Search communities..."
+                                        value={searchTerm}
+                                        onChange={(e) => handleSearchChange(e.target.value)}
+                                        className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:border-indigo-500 focus:outline-none transition-colors"
+                                    />
+                                </div>
 
-            document.querySelectorAll('.community-card').forEach(card => {
-                const isNSFW = card.classList.contains('nsfw');
+                                <select
+                                    value={searchMode}
+                                    onChange={(e) => setSearchMode(e.target.value)}
+                                    className="px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-indigo-500 focus:outline-none transition-colors"
+                                >
+                                    <option value="all">Name & Description</option>
+                                    <option value="name">Name Only</option>
+                                    <option value="description">Description Only</option>
+                                </select>
 
-                // Remove any previous NSFW mode classes
-                card.classList.remove('only-nsfw-mode');
+                                <select
+                                    value={sortBy}
+                                    onChange={(e) => setSortBy(e.target.value)}
+                                    className="px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-indigo-500 focus:outline-none transition-colors"
+                                >
+                                    <option value="subscribers">Subscribers (High to Low)</option>
+                                    <option value="subscribers_asc">Subscribers (Low to High)</option>
+                                    <option value="name">Name (A-Z)</option>
+                                    <option value="name_desc">Name (Z-A)</option>
+                                    <option value="created">Newest First</option>
+                                    <option value="created_desc">Oldest First</option>
+                                </select>
+                            </div>
 
-                if (onlyNSFW) {
-                    if (isNSFW) {
-                        card.style.display = '';
-                        card.classList.add('only-nsfw-mode'); // Remove NSFW styling
-                                card.classList.remove('hide-nsfw');
-                        card.classList.remove('unblurred', 'expanded'); // Reset state
-                                card.dataset.nsfwClicks = 0;
+                            {/* Stats */}
+                            <div className="flex gap-6 justify-center flex-wrap">
+                                {[
+                                    { label: 'Communities Shown', value: formatNumber(stats.total), icon: '🏘️' },
+                                    { label: 'Total Subscribers', value: formatNumber(stats.total_subscribers), icon: '👥' },
+                                    { label: 'Avg Subscribers', value: formatNumber(stats.avg_subscribers), icon: '📊' }
+                                ].map((stat, idx) => (
+                                    <div key={idx} className="text-center bg-white rounded-xl p-4 shadow-md min-w-32">
+                                        <div className="text-2xl mb-1">{stat.icon}</div>
+                                        <div className="text-2xl font-bold text-indigo-600">{stat.value}</div>
+                                        <div className="text-sm text-gray-600">{stat.label}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
 
-                    } else {
-                        card.style.display = 'none';
-                    }
+                        {/* Results */}
+                        <div className="bg-white bg-opacity-95 rounded-2xl overflow-hidden shadow-xl backdrop-blur-sm">
+                            <div className="bg-indigo-600 text-white p-6">
+                                <div className="flex justify-between items-center">
+                                    <div>
+                                        <h2 className="text-2xl font-bold">Communities</h2>
+                                        {pagination.total && (
+                                            <p className="opacity-90 mt-1">
+                                                Showing {((pagination.page - 1) * pagination.per_page) + 1}-
+                                                {Math.min(pagination.page * pagination.per_page, pagination.total)} of {pagination.total.toLocaleString()} subreddits
+                                            </p>
+                                        )}
+                                    </div>
+                                    <button
+                                        onClick={() => setIsCompact(!isCompact)}
+                                        className="px-4 py-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg transition-all font-medium"
+                                    >
+                                        {isCompact ? 'Expanded View' : 'Compact View'}
+                                    </button>
+                                </div>
+                            </div>
 
-                } else {
-                    // Normal mode
-                        card.classList.remove('only-nsfw-mode');
-                    if (isNSFW && !showNSFW) {
-                        card.style.display = 'none';
-                    } else {
-                        card.style.display = '';
-                        if (isNSFW) {
-                            card.classList.remove('unblurred', 'expanded'); // Reset NSFW cards
-                        }
-                    }
-                }
-            });
-        }
+                            {/* Content */}
+                            <div className="divide-y divide-gray-100">
+                                {loading ? (
+                                    <div className="text-center py-12 text-indigo-600 text-xl">
+                                        <div className="inline-block w-8 h-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite] mb-3"></div>
+                                        <div>Loading communities...</div>
+                                    </div>
+                                ) : error ? (
+                                    <div className="text-center py-12 text-red-600 text-xl">
+                                        ❌ {error}
+                                    </div>
+                                ) : communities.length === 0 ? (
+                                    <div className="text-center py-12 text-gray-600">
+                                        <h3 className="text-xl font-semibold mb-2">No communities found</h3>
+                                        <p>Try adjusting your search or filter criteria</p>
+                                    </div>
+                                ) : (
+                                    communities.map((community, index) => (
+                                        <CommunityCard
+                                            key={index}
+                                            community={community}
+                                            index={index}
+                                            isExpanded={expandedCards.has(index)}
+                                            onToggle={toggleCardExpansion}
+                                            isCompact={isCompact}
+                                        />
+                                    ))
+                                )}
+                            </div>
 
-        // UI State Functions
-        function showLoading() {
-            document.getElementById('communityGrid').innerHTML = 
-                '<div class="loading">⏳ Loading communities...</div>';
-        }
+                            <Pagination pagination={pagination} />
+                        </div>
+                    </div>
+                </div>
+            );
+        };
 
-        function showError(message) {
-            document.getElementById('communityGrid').innerHTML = 
-                `<div class="error">⚠ ${message}</div>`;
-            document.getElementById('resultCount').textContent = 'Error loading data';
-        }
-
-        // Event Listeners
-        function setupEventListeners() {
-            // Menu
-            openMenuBtn.addEventListener('click', () => {
-                menuOverlay.style.display = 'flex';
-            });
-
-            closeMenuBtn.addEventListener('click', () => {
-                menuOverlay.style.display = 'none';
-            });
-
-            // NSFW settings
-            nsfwToggle.addEventListener('change', applyNSFWSettings);
-            onlyNSFWToggle.addEventListener('change', () => {
-                if (onlyNSFWToggle.checked) {
-                    document.body.classList.add('nsfw-only-mode');
-                } else {
-                    document.body.classList.remove('nsfw-only-mode');
-                }
-                applyNSFWSettings();
-            });
-
-
-            // View toggle
-            const toggleBtn = document.getElementById('compactToggle');
-            const grid = document.getElementById('communityGrid');
-
-            toggleBtn.addEventListener('click', () => {
-                grid.classList.toggle('compact');
-                toggleBtn.textContent = grid.classList.contains('compact') ? 
-                    'Expanded View' : 'Compact View';
-            });
-        }
-
-        // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
-            setupEventListeners();
-            loadData();
-            updateStats();
-        });
+        // Render the app
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(RedditExplorer));
     </script>
 </body>
 </html>

@@ -45,7 +45,7 @@ def get_communities():
         sort_by = request.args.get('sort', 'subscribers')
         page = int(request.args.get('page', 1))
         per_page = min(int(request.args.get('per_page', 50)), 100)
-        nsfw_only = request.args.get('nsfw_only', '').lower() == 'true'  # Add this line
+        nsfw_only = request.args.get('nsfw_only', '').lower() == 'true'
 
         
         conn = get_db_connection()
@@ -138,9 +138,9 @@ def get_communities():
         # Pagination
         offset = (page - 1) * per_page
         if search_uses_fts:
-            select_query = f"SELECT DISTINCT c.* {base_query} {sort_clause} LIMIT ? OFFSET ?"
+            select_query = f"SELECT DISTINCT c.*, c.comment_count_july25 AS comment_count {base_query} {sort_clause} LIMIT ? OFFSET ?"
         else:
-            select_query = f"SELECT * {base_query} {sort_clause} LIMIT ? OFFSET ?"
+            select_query = f"SELECT *, comment_count_july25 AS comment_count {base_query} {sort_clause} LIMIT ? OFFSET ?"
         
         query_params = params + [per_page, offset]
         cursor.execute(select_query, query_params)
@@ -161,7 +161,8 @@ def get_communities():
                 'over18': int(row['over18'] or 0),
                 'subreddit_type': row['subreddit_type'] or '',
                 'name': row['name'] or '',
-                'title': row['title'] or ''
+                'title': row['title'] or '',
+                'comment_count': int(row['comment_count'] or 0), # Add this line
             }
             result_data.append(item)
         
@@ -317,7 +318,7 @@ def search_performance():
             'time_ms': round((time.time() - start) * 1000, 2)
         }
         
-        # 2. LIKE search on descriptions  
+        # 2. LIKE search on descriptions 
         start = time.time()
         cursor.execute("SELECT COUNT(*) FROM communities WHERE public_description LIKE ?", 
                       [f'%{search_term}%', f'%{search_term}%'])
