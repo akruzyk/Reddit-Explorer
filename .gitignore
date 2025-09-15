@@ -1,5 +1,6 @@
 reddit_communities.db
-csv/
+csv/*
+frontend/node_modules/
 scripts/csv_to_sqlite.py
 scripts/deduped.py
 scripts/merge-csv.py
@@ -28,3 +29,9 @@ csv-backup/1000-9999_over18_true.csv
 mistral-7B-v0.1.tar
 subreddits_over_1000_subscribers_2025 copy.xlsx
 subreddits_over_1000_subscribers_2025.csv
+.conda/
+.venv/
+.vscode/
+data/*
+rddit.html.backup
+rddit.html.old

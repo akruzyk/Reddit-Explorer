@@ -1,6 +1,6 @@
 import zstandard as zst
 import json
-from sqlite3 import connect
+import csv
 import sys
 import logging
 import os
@@ -10,39 +10,29 @@ from datetime import datetime, timedelta
 
 # Configure logging
 def setup_logging(year, month):
-    log_dir = '/Users/akruzyk/Programming/Reddit-Explorer/logs'
-    os.makedirs(log_dir, exist_ok=True)
-    log_file = f'{log_dir}/skipped_lines_{year}_{month:02d}.log'
+    log_file = f'skipped_lines_{year}_{month:02d}.log'
     logging.basicConfig(
         filename=log_file,
-        level=logging.INFO,  # Changed from WARNING to INFO
+        level=logging.WARNING,
         format='%(asctime)s - %(levelname)s - %(message)s'
     )
-    # Create empty log file if it doesn't exist
-    with open(log_file, 'a'):
-        pass
     return log_file
 
 # Calculate UTC timestamp range for a given year/month
 def get_month_utc_range(year, month):
     start_date = datetime(year, month, 1)
-    # Get first day of next month, then subtract 1 second
     next_month = (month % 12) + 1
     next_year = year + (month // 12)
     end_date = datetime(next_year, next_month, 1) - timedelta(seconds=1)
     return int(start_date.timestamp()), int(end_date.timestamp())
 
-# Increase integer string limit
-sys.set_int_max_str_digits(10000)
-
 # Parse command-line arguments
 if len(sys.argv) < 2:
-    print("Usage: python comment_count.py PATH_TO_ZST_FILE [SUBREDDIT]")
+    print("Usage: python zst_to_csv.py PATH_TO_ZST_FILE [SUBREDDIT]")
     sys.exit(1)
 
 ZST_FILE = sys.argv[1]
 TARGET_SUBREDDIT = sys.argv[2].lower() if len(sys.argv) > 2 else None
-DB_FILE = "/Users/akruzyk/Programming/Reddit-Explorer/reddit_communities.db"
 
 # Extract year and month from filename
 match = re.match(r'.*RC_(\d{4})-(\d{2})\.zst$', ZST_FILE)
@@ -50,34 +40,25 @@ if not match:
     raise ValueError("Filename must be in format RC_YYYY-MM.zst")
 year, month = int(match.group(1)), int(match.group(2))
 
-# Get UTC timestamp range for the month
-utc_start, utc_end = get_month_utc_range(year, month)
-
 # Setup logging
 log_file = setup_logging(year, month)
 
-# Connect to SQLite
-conn = connect(DB_FILE)
-cursor = conn.cursor()
+# Output CSV file
+csv_file = ZST_FILE.replace('.zst', '.csv')
 
-# Drop and create table dynamically
-table_name = f"comment_count_{year}_{month:02d}"
-cursor.execute(f"DROP TABLE IF EXISTS {table_name}")
-cursor.execute(f"""
-    CREATE TABLE {table_name} (
-        subreddit TEXT PRIMARY KEY,
-        month_comment_count INTEGER
-    )
-""")
+# Get UTC timestamp range for the month
+utc_start, utc_end = get_month_utc_range(year, month)
 
-# Process .zst file with progress tracking
-comment_counts = {}
+# Process .zst file and write to CSV
 file_size = os.path.getsize(ZST_FILE)
 try:
-    with open(ZST_FILE, 'rb') as fh:
+    with open(ZST_FILE, 'rb') as fh, open(csv_file, 'w', newline='', encoding='utf-8') as csv_fh:
         dctx = zst.ZstdDecompressor(max_window_size=2147483648)
+        csv_writer = csv.writer(csv_fh, quoting=csv.QUOTE_MINIMAL)
+        csv_writer.writerow(['subreddit', 'created_utc', 'date', 'body', 'id', 'author'])
+        
         with dctx.stream_reader(fh) as reader:
-            pbar = tqdm(total=file_size, unit='B', unit_scale=True, desc=f"Processing RC_{year}-{month:02d}.zst")
+            pbar = tqdm(total=file_size, unit='B', unit_scale=True, desc=f"Processing {os.path.basename(ZST_FILE)}")
             buffer = b""
             while True:
                 chunk = reader.read(8192)
@@ -91,16 +72,22 @@ try:
                         data = json.loads(line.decode('utf-8', errors='ignore'))
                         subreddit = data.get('subreddit', '').lower()
                         created_utc = data.get('created_utc', 0)
-                        # Debug: Print every line's subreddit and date
+                        # Convert created_utc to readable date
                         try:
                             created_date = datetime.utcfromtimestamp(int(created_utc)).strftime('%Y-%m-%d')
                         except (ValueError, TypeError):
                             created_date = "Invalid"
-                        print(f"Line: subreddit={subreddit}, created_utc={created_utc}, date={created_date}")
-                        # Count comments for TARGET_SUBREDDIT or all if None, within month
+                        # Filter by subreddit and month (optional)
                         if subreddit and (TARGET_SUBREDDIT is None or subreddit == TARGET_SUBREDDIT) and utc_start <= int(created_utc) <= utc_end:
-                            comment_counts[subreddit] = comment_counts.get(subreddit, 0) + 1
-                            logging.info(f"Counted comment for {subreddit}: {data.get('id', 'unknown')}")
+                            csv_writer.writerow([
+                                subreddit,
+                                created_utc,
+                                created_date,
+                                data.get('body', '').replace('\n', ' ').replace('\r', ' '),  # Clean newlines
+                                data.get('id', ''),
+                                data.get('author', '')
+                            ])
+                            logging.info(f"Wrote comment for {subreddit}: {data.get('id', 'unknown')}")
                     except (json.JSONDecodeError, ValueError, KeyError) as e:
                         logging.warning(f"Skipped line: {line[:100].decode('utf-8', errors='ignore')}... | Error: {e}")
             pbar.close()
@@ -108,13 +95,4 @@ except zstd.ZstdError as e:
     print(f"❌ Zstandard decompression error: {e}")
     sys.exit(1)
 
-# Insert into table
-for subreddit, count in comment_counts.items():
-    cursor.execute(f"INSERT OR REPLACE INTO {table_name} (subreddit, month_comment_count) VALUES (?, ?)",
-                  (subreddit, count))
-
-conn.commit()
-conn.close()
-
-print(f"Aggregation complete for RC_{year}-{month:02d}. Check the {table_name} table.")
-print(f"Subreddit comment counts: {comment_counts}")
+print(f"Conversion complete. CSV saved to {csv_file}")
