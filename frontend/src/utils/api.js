@@ -52,14 +52,12 @@ export const loadStats = async (setStats, { currentTier, nsfwOnly }) => {
 export const getCommentHistory = async (subreddit) => {
   try {
     const response = await fetch(`${API_BASE}/api/comments/${subreddit}`);
-    if (!response.ok) {
-      throw new Error(`HTTP error: ${response.status}`);
-    }
-    return await response.json();
+    if (!response.ok) throw new Error("Failed to fetch comment history");
+    const data = await response.json();
+    return data.data; // <-- Make sure you return the array!
   } catch (error) {
-    console.error('Error fetching comment history:', error);
+    console.error(error);
     return [];
   }
 };
-
 

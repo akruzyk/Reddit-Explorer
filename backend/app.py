@@ -24,6 +24,7 @@ app.register_blueprint(debug_bp, url_prefix='/api')
 app.register_blueprint(health_bp, url_prefix='/api')
 app.register_blueprint(performance_bp, url_prefix='/api')
 
+
 # --- Serve frontend SPA ---
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")

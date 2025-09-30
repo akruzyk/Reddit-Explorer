@@ -219,49 +219,17 @@ def get_categories():
     conn.close()
     return {'categories': categories}
 
-@communities_bp.route('/api/comments/<subreddit>')
-def get_subreddit_comments(subreddit):
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        
-        # Get all comment count tables
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'comment_count_%'")
-        tables = [row[0] for row in cursor.fetchall()]
-        
-        monthly_data = []
-        
-        for table in sorted(tables):
-            # Extract year and month from table name
-            try:
-                parts = table.split('_')
-                year = int(parts[2])
-                month = int(parts[3])
-                
-                # Query comment count for this subreddit in this month
-                cursor.execute(f"SELECT month_comment_count FROM {table} WHERE subreddit = ?", (subreddit.lower(),))
-                row = cursor.fetchone()
-                
-                if row and row[0] is not None:
-                    monthly_data.append({
-                        'month': f"{year}-{month:02d}",
-                        'count': row[0],
-                        'year': year,
-                        'month_num': month
-                    })
-                    
-            except (ValueError, IndexError):
-                # Skip tables with malformed names
-                continue
-        
-        conn.close()
-        
-        # Sort by date (oldest first)
-        monthly_data.sort(key=lambda x: (x['year'], x['month_num']))
-        
-        return jsonify(monthly_data)
-        
-    except Exception as e:
-        print(f"Error in /api/comments/{subreddit}: {str(e)}")
-        print(traceback.format_exc())
-        return jsonify({'error': f'Server error: {str(e)}'}), 500
+@communities_bp.route("/comments/<subreddit>")
+def get_monthly_comments(subreddit):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    tables = [t[0] for t in cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'comment_count_%'")]
+    data = []
+    for table in sorted(tables):
+        cursor.execute(f"SELECT subreddit, month_comment_count FROM {table} WHERE subreddit=?", (subreddit,))
+        row = cursor.fetchone()
+        if row:
+            month = table.split("_")[-2] + "-" + table.split("_")[-1]  # e.g., 2009-04
+            data.append({"month": month, "count": row[1]})
+    conn.close()
+    return {"data": data}

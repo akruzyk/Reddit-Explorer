@@ -1,9 +1,9 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Print the first N lines from a .zst file with robust error handling.
 """
 
-import zstandard as zstd
+import zstandard as zst
 import io
 import sys
 from pathlib import Path

@@ -7,21 +7,7 @@ import os
 import re
 from tqdm import tqdm
 from datetime import datetime, timedelta
-
-# Configure logging
-def setup_logging(year, month):
-    log_dir = '/Users/akruzyk/Programming/Reddit-Explorer/logs'
-    os.makedirs(log_dir, exist_ok=True)
-    log_file = f'{log_dir}/skipped_lines_{year}_{month:02d}.log'
-    logging.basicConfig(
-        filename=log_file,
-        level=logging.INFO,  # Changed from WARNING to INFO
-        format='%(asctime)s - %(levelname)s - %(message)s'
-    )
-    # Create empty log file if it doesn't exist
-    with open(log_file, 'a'):
-        pass
-    return log_file
+import csv
 
 # Calculate UTC timestamp range for a given year/month
 def get_month_utc_range(year, month):
@@ -32,17 +18,39 @@ def get_month_utc_range(year, month):
     end_date = datetime(next_year, next_month, 1) - timedelta(seconds=1)
     return int(start_date.timestamp()), int(end_date.timestamp())
 
+# Load subreddits from CSV file
+def load_subreddits_from_csv(csv_file):
+    subreddits_set = set()
+    try:
+        with open(csv_file, 'r', newline='', encoding='utf-8') as f:
+            reader = csv.reader(f)
+            next(reader)  # Skip header row
+            for row in reader:
+                if row:  # Check if row is not empty
+                    subreddits_set.add(row[0].lower().strip())
+        logging.info(f"Loaded {len(subreddits_set)} subreddits from CSV")
+        return subreddits_set
+    except FileNotFoundError:
+        logging.error(f"CSV file not found: {csv_file}")
+        sys.exit(1)
+    except Exception as e:
+        logging.error(f"Error reading CSV file: {e}")
+        sys.exit(1)
+
 # Increase integer string limit
 sys.set_int_max_str_digits(10000)
 
 # Parse command-line arguments
 if len(sys.argv) < 2:
-    print("Usage: python comment_count.py PATH_TO_ZST_FILE [SUBREDDIT]")
+    print("Usage: python comment_count.py PATH_TO_ZST_FILE")
     sys.exit(1)
 
 ZST_FILE = sys.argv[1]
-TARGET_SUBREDDIT = sys.argv[2].lower() if len(sys.argv) > 2 else None
+CSV_FILE = "/Users/akruzyk/Programming/Reddit-Explorer/scripts/subreddits_over_1000_subscribers_2025.csv"  # Update path if needed
 DB_FILE = "/Users/akruzyk/Programming/Reddit-Explorer/reddit_communities.db"
+
+# Load target subreddits from CSV
+target_subreddits = load_subreddits_from_csv(CSV_FILE)
 
 # Extract year and month from filename
 match = re.match(r'.*RC_(\d{4})-(\d{2})\.zst$', ZST_FILE)
@@ -52,9 +60,6 @@ year, month = int(match.group(1)), int(match.group(2))
 
 # Get UTC timestamp range for the month
 utc_start, utc_end = get_month_utc_range(year, month)
-
-# Setup logging
-log_file = setup_logging(year, month)
 
 # Connect to SQLite
 conn = connect(DB_FILE)
@@ -73,6 +78,9 @@ cursor.execute(f"""
 # Process .zst file with progress tracking
 comment_counts = {}
 file_size = os.path.getsize(ZST_FILE)
+processed_count = 0
+skipped_count = 0
+
 try:
     with open(ZST_FILE, 'rb') as fh:
         dctx = zst.ZstdDecompressor(max_window_size=2147483648)
@@ -91,20 +99,20 @@ try:
                         data = json.loads(line.decode('utf-8', errors='ignore'))
                         subreddit = data.get('subreddit', '').lower()
                         created_utc = data.get('created_utc', 0)
-                        # Debug: Print every line's subreddit and date
-                        try:
-                            created_date = datetime.utcfromtimestamp(int(created_utc)).strftime('%Y-%m-%d')
-                        except (ValueError, TypeError):
-                            created_date = "Invalid"
-                        print(f"Line: subreddit={subreddit}, created_utc={created_utc}, date={created_date}")
-                        # Count comments for TARGET_SUBREDDIT or all if None, within month
-                        if subreddit and (TARGET_SUBREDDIT is None or subreddit == TARGET_SUBREDDIT) and utc_start <= int(created_utc) <= utc_end:
+                        
+                        # Only count if subreddit is in our target list and within date range
+                        if (subreddit in target_subreddits and 
+                            utc_start <= int(created_utc) <= utc_end):
                             comment_counts[subreddit] = comment_counts.get(subreddit, 0) + 1
-                            logging.info(f"Counted comment for {subreddit}: {data.get('id', 'unknown')}")
+                            processed_count += 1
+                        else:
+                            skipped_count += 1
+                            
                     except (json.JSONDecodeError, ValueError, KeyError) as e:
-                        logging.warning(f"Skipped line: {line[:100].decode('utf-8', errors='ignore')}... | Error: {e}")
+                        skipped_count += 1
+                        continue
             pbar.close()
-except zstd.ZstdError as e:
+except zst.ZstdError as e:
     print(f"❌ Zstandard decompression error: {e}")
     sys.exit(1)
 
@@ -116,5 +124,7 @@ for subreddit, count in comment_counts.items():
 conn.commit()
 conn.close()
 
-print(f"Aggregation complete for RC_{year}-{month:02d}. Check the {table_name} table.")
-print(f"Subreddit comment counts: {comment_counts}")
+print(f"Aggregation complete for RC_{year}-{month:02d}")
+print(f"Processed {processed_count} comments, skipped {skipped_count} comments")
+print(f"Found {len(comment_counts)} subreddits from the CSV file")
+print(f"Total comment counts: {sum(comment_counts.values())}")

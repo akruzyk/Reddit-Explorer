@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { formatNumber, formatDate, getSubredditTags } from "../utils/formatters";
-import { getCommentHistory } from "../utils/api"; // We'll add this to api.js
+import { getCommentHistory } from "../utils/api";
+
 
 const CommunityCard = ({ community, index, isExpanded, onToggle, isCompact, searchTerm }) => {
   const isBlurred = community.over18 && !isExpanded;
